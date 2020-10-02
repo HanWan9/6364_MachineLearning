@@ -1,65 +1,114 @@
-from numpy import *
-import operator
-# mnist
-import struct
-import array
-import numpy
-#https://github.com/sorki/python-mnist/blob/master/mnist/loader.py
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+import pandas as pd
+import csv
+import os
+from sklearn.model_selection import train_test_split
+from random import randrange
+from collections import defaultdict
+from multicpu import multi_cpu
 
-def classify0(inX, dataSet, labels, k):
-    dataSetSize = dataSet.shape[0]
-    diffMat = tile(inX, (dataSetSize, 1)) - dataSet
-    sqDiffMat = diffMat ** 2
-    sqDistances = sqDiffMat.sum(axis=1)
-    distances = sqDistances ** 0.5
-    sortedDistIndicies = distances.argsort()
-    classCount = {}
+# load the data using numpy
+def load_data(train_name,test_name):
+    train = pd.read_csv(train_name)
+    print("training data:", train.shape)
+    x_train = train.values[:,1:]
+    y_train = train.values[:,0]
+
+    test = pd.read_csv(test_name)
+    print("test data:", test.shape)
+    x_test = test.values[:, 1:]
+    y_test = test.values[:, 0]
+    return x_train, y_train, x_test, y_test
+
+# def process_dataset(dataset_name):
+#     dataset = pd.read_csv(dataset_name)
+#     dataset.head()
+#
+#     dataset['label'].value_counts()
+#
+#     train_row = 40000
+#     x_train, y_train, x_test, y_test = load_data(train_row,"mnist_origin_train.csv","mnist_test.csv")
+#
+#     # print(x_train.shape, y_train.shape, x_test.shape, y_test.shape)
+#     return x_train, y_train, x_test, y_test
+
+def knn(inx,dataset,labels,k):
+    dist = (((dataset-inx)**2).sum(1))**0.5
+    sorted_dist = dist.argsort()
+    class_count = defaultdict(int)
     for i in range(k):
-        voteIlabel = labels[sortedDistIndicies[i]]
-        classCount[voteIlabel] = classCount.get(voteIlabel, 0) + 1
-    sortedClassCount = sorted(classCount.items(), key=operator.itemgetter(1), reverse=True)
-    # print sortedClassCount
-    return sortedClassCount[0][0]
+        vote_label = labels[sorted_dist[i]]
+        class_count[vote_label] += 1
+    max_type = -1
+    max_count = -1
+    for key, value in class_count.items():
+        if value > max_count:
+            max_count = value
+            max_type = key
+    return max_type
+
+def mnist():
+    origin_x_train, origin_y_train, origin_x_test, origin_y_test = load_data("mnist_train.csv","mnist_test.csv")
+    # data visualization
+    row = int(randrange(1, 9))
+
+    print("Display an random image of number:", origin_y_train[row])
+
+    plt.imshow(origin_x_train[row].reshape((28, 28)))
+    plt.show()
+
+    # Display partical images from dataset
+    classes = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    rows = 4
+    for y, cls in enumerate(classes):
+        idxs = np.nonzero([i == y for i in origin_y_train])
+        idxs = np.random.choice(idxs[0], rows)
+        for i, idx in enumerate(idxs):
+            plt_idx = i * len(classes) + y + 1
+            plt.subplot(rows, len(classes), plt_idx)
+            plt.imshow(origin_x_train[idx].reshape((28, 28)))
+            plt.axis("off")
+            if i == 0:
+                plt.title(cls)
+    plt.show()
+
+    # print(list(origin_y_test))
+    mnist_x_train = np.array(list(origin_x_train))
+    mnist_y_train = np.array(list(origin_y_train))
+    mnist_x_test = list(origin_x_test)
+    standard_label = list(origin_y_test)
+    success = 0
+    failed = 0
+    print("test cases number:",len(mnist_x_test))
+    for i in range(len(mnist_x_test)):
+        inx = np.array(mnist_x_test[i])
+        res = knn(inx, mnist_x_train, mnist_y_train, 5)
+        print("case:%5d  " % (i), standard_label[i], "---", res)
+        if standard_label[i] != res:
+            failed += 1
+        else:
+            success += 1
+    return i+1,success,failed
 
 
-def handwritingClassTest():
-    trainingMat, hwLabels, size = load_mnist('D:/electrical/temp/MNIST_data/train-images-idx3-ubyte',
-                                                 'D:/electrical/temp/MNIST_data/train-labels-idx1-ubyte')
-    dataUnderTest, classNumStr, size = load_mnist('D:/electrical/temp\MNIST_data/t10k-images-idx3-ubyte',
-                                                      'D:/electrical/temp/MNIST_data/t10k-labels-idx1-ubyte')
-    errorCount = 0.0
-    for i in range(size):
-        classifierResult = classify0(dataUnderTest[i, :], trainingMat, hwLabels, 3)
-        print("the NO.%d classifier came back with: %d, the real answer is: %d, error count is: %d" % (
-        i, classifierResult, classNumStr[i], errorCount))
-        if (classifierResult != classNumStr[i]): errorCount += + 1.0
-    print("\nthe total number of errors is: %d" % errorCount)
-    print("\nthe total error rate is: %f" % (errorCount / float(size)))
+if __name__ == "__main__":
+    tests_number,success,failed = mnist()
+    print("%d test cases: %d success, %d failed. accurancy:=%.4f" % (tests_number, success, failed, success / 2000.0))
 
-# load mnist
-def load_mnist(path_img, path_lbl):
-    labels = []
-    with open(path_lbl, 'rb') as file:
-        magic, size = struct.unpack(">II", file.read(8))
-        if magic != 2049:
-            raise ValueError('Magic number mismatch, expected 2049,'
-                             'got {}'.format(magic))
 
-        label_data = array.array("B", file.read())
-        for i in range(size):
-            labels.append(label_data[i])
-    with open(path_img, 'rb') as file:
-        magic, size, rows, cols = struct.unpack(">IIII", file.read(16))
-        if magic != 2051:
-            raise ValueError('Magic number mismatch, expected 2051,'
-                             'got {}'.format(magic))
-        image_data = array.array("B", file.read())
-        images = numpy.zeros((size, rows * cols))
 
-        for i in range(size):
-            if ((i % 2000 == 0) or (i + 1 == size)):
-                print("%d numbers imported" % (i))
-            images[i, :] = image_data[i * rows * cols: (i + 1) * rows * cols]
-    return images, labels, size
 
-handwritingClassTest
+
+#
+# def get_mnist_test_data(dataset_name):
+#     data = pd.read_csv(dataset_name)
+#     # select data except labels
+#     images = data.iloc[:,1:].values
+#     # flatten label
+#     labels = data.iloc[:,:1].values.ravel()
+#     images = np.multiply(images,1.0/255.0)
+#     images = images.reshape(images.shape[0],1,28,28)
+#     print(images)
+#     return images,labels
