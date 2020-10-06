@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 import csv
 import os
 from sklearn.model_selection import train_test_split
@@ -9,8 +10,10 @@ from random import randrange
 from collections import defaultdict
 from multicpu import multi_cpu
 
+
+
 # load the data using numpy
-def load_data(train_name,test_name):
+def load_mnist_data(train_name,test_name):
     train = pd.read_csv(train_name)
     print("training data:", train.shape)
     x_train = train.values[:,1:]
@@ -22,17 +25,6 @@ def load_data(train_name,test_name):
     y_test = test.values[:, 0]
     return x_train, y_train, x_test, y_test
 
-# def process_dataset(dataset_name):
-#     dataset = pd.read_csv(dataset_name)
-#     dataset.head()
-#
-#     dataset['label'].value_counts()
-#
-#     train_row = 40000
-#     x_train, y_train, x_test, y_test = load_data(train_row,"mnist_origin_train.csv","mnist_test.csv")
-#
-#     # print(x_train.shape, y_train.shape, x_test.shape, y_test.shape)
-#     return x_train, y_train, x_test, y_test
 
 def knn(inx,dataset,labels,k):
     dist = (((dataset-inx)**2).sum(1))**0.5
@@ -50,7 +42,7 @@ def knn(inx,dataset,labels,k):
     return max_type
 
 def mnist():
-    origin_x_train, origin_y_train, origin_x_test, origin_y_test = load_data("mnist_train.csv","mnist_test.csv")
+    origin_x_train, origin_y_train, origin_x_test, origin_y_test = load_mnist_data("mnist_train.csv","mnist_test.csv")
     # data visualization
     row = int(randrange(1, 9))
 
@@ -81,11 +73,12 @@ def mnist():
     standard_label = list(origin_y_test)
     success = 0
     failed = 0
-    print("test cases number:",len(mnist_x_test))
+    print("mnist test cases number:",len(mnist_x_test))
     for i in range(len(mnist_x_test)):
         inx = np.array(mnist_x_test[i])
         res = knn(inx, mnist_x_train, mnist_y_train, 5)
-        print("case:%5d  " % (i), standard_label[i], "---", res)
+        if i % 250 == 0:
+            print("mnist case:#%5d  " % (i), standard_label[i], "---", res)
         if standard_label[i] != res:
             failed += 1
         else:
@@ -93,12 +86,60 @@ def mnist():
     return i+1,success,failed
 
 
-if __name__ == "__main__":
-    tests_number,success,failed = mnist()
-    print("%d test cases: %d success, %d failed. accurancy:=%.4f" % (tests_number, success, failed, success / 2000.0))
+# pima
+def load_pima_data(train_name,test_name):
+    train = pd.read_csv(train_name)
+    print("training data:", train.shape)
+    x_train = train.values[:,:8]
+    y_train = train.values[:,8]
+
+    test = pd.read_csv(test_name)
+    print("test data:", test.shape)
+    x_test = test.values[:, :8]
+    y_test = test.values[:, 8]
+    return x_train, y_train, x_test, y_test
+
+def pima():
+    pima = pd.read_csv("pima_indians_diabetes.csv")
+    print(pima.head())
+    print(pima.shape)
+    print(pima.describe())
+    # histogram
+    pima.hist(figsize=(16, 14))
+    # scatter diagram
+    sns.pairplot(pima, hue="Outcome")
+
+
+    x_train, y_train, x_test, y_test = load_pima_data("pima_train.csv","pima_test.csv")
+    pima_x_train = np.array(list(x_train))
+    pima_y_train = np.array(list(y_train))
+    pima_x_test = list(x_test)
+    standard_label = list(y_test)
+    success = 0
+    failed = 0
+    print("pima test cases number:",len(pima_x_test))
+    for i in range(len(pima_x_test)):
+        inx = np.array(pima_x_test[i])
+        res = knn(inx, pima_x_train, pima_y_train, 5)
+        if i % 10 == 0:
+            print("pima case:#%2d  " % (i), standard_label[i], "---", res)
+        if standard_label[i] != res:
+            failed += 1
+        else:
+            success += 1
+    return i+1,success,failed
 
 
 
+
+
+# mnist
+# mnist_tests_number,mnist_success_number,mnist_failed_number = mnist()
+# print("%d mnist test cases: %d success, %d failed. Accurancy:=%.4f" % (mnist_tests_number,mnist_success_number,mnist_failed_number, mnist_success_number / mnist_tests_number))
+
+# pima
+pima_tests_number, pima_success_number, pima_failed_number = pima()
+print("%d pima test cases: %d success, %d failed. Accurancy:=%.4f" % (pima_tests_number, pima_success_number, pima_failed_number, pima_success_number / pima_tests_number))
 
 
 #
