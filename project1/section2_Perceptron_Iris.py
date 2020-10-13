@@ -196,12 +196,16 @@ if if_test:
     print("预测值:", predictions)
     print("真实值:", y_test)
     print("Perceptron classificaiton accuracy:", accuracy(y_test,predictions))
-    # plot_decision_regions(x, y, classifier=p)
-    # plt.title("section_2:Perceptron-Iris")
-    # plt.xlabel("")
-    # plt.ylabel("")
-    # plt.legend(loc="upper left")
-    # plt.show()
+
+
+    plot_decision_regions(x, y, classifier=p)
+    plt.title("section_2:Perceptron-Iris")
+    plt.xlabel("")
+    plt.ylabel("")
+    plt.legend(loc="upper left")
+    plt.show()
+
+
 else:
     for lr in learning_rates:
         path = []
@@ -211,9 +215,13 @@ else:
             predictions = p.predict(x_test)
             path.append(accuracy(y_test,predictions))
         accuracies.append(path)
-        # print(lr,sum(path)/20)
-        # plt.plot(iters,path)
-        # plt.show()
+
+
+        print(lr,sum(path)/20)
+        plt.plot(iters,path)
+        plt.show()
+
+
     plot_table(iters,learning_rates,accuracies)
 
 
