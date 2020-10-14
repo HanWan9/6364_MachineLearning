@@ -1,55 +1,61 @@
-import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
-import tensorflow as tf
-from sklearn.metrics import confusion_matrix
+# import pandas as pd
+# from scipy import stats
+import statsmodels.api as sm
 
+# import matplotlib.pyplot as plt
 
-with np.load('mnist.npz') as f:
-    x_train, y_train = f['x_train'], f['y_train']
-    x_test, y_test = f['x_test'], f['y_test']
+'''
+验证置信度、置信区间
+1、首先创建一个3.25万个数字的numpy数组，65%的数据为1，其余数据为0
+'''
+love_soccer_prop = 0.65  # 实际足球爱好者比例
+total_population = 325 * 10 ** 2  # 总人口
 
-x_train = x_train.reshape(60000, 28, 28, 1)
-x_test = x_test.reshape(10000, 28, 28, 1)
-print(x_train.shape)
-print(x_test.shape)
+num_people_love_soccer = int(total_population * love_soccer_prop)
+num_people_dont_love_soccer = int(total_population * (1 - love_soccer_prop))
 
-# === model: CNN ===
-model = tf.keras.models.Sequential()
-model.add(tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)))
-model.add(tf.keras.layers.MaxPooling2D((2, 2)))
-model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
-model.add(tf.keras.layers.MaxPooling2D((2, 2)))
-model.add(tf.keras.layers.Flatten())
-model.add(tf.keras.layers.Dense(64, activation='relu'))
-model.add(tf.keras.layers.Dense(10, activation='softmax'))
-model.compile(optimizer='adam',
-              loss='sparse_categorical_crossentropy',
-              metrics=['accuracy'])
-model.summary()
+people_love_soccer = np.ones(num_people_love_soccer)
+people_dont_love_soccer = np.zeros(num_people_dont_love_soccer)
 
-# === train ===
-model.fit(x=x_train, y=y_train,
-          batch_size=512,
-          epochs=1,
-          validation_data=(x_test, y_test))
+all_people = np.hstack([people_love_soccer, people_dont_love_soccer])
 
-# === pred ===
-y_pred = model.predict_classes(x_test)
-print(y_pred)
+print("\n 取得总体平均值：")
+print(np.mean(all_people))
 
-# === 混淆矩阵：真实值与预测值的对比 ===
-# https://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
-con_mat = confusion_matrix(y_test, y_pred)
+'''
+2、现在抽取几组容量为1000的样本，看看得到的百分比是多少
+'''
+print("\n 10次，随机抽取1000个样本，分别计算平均值：")
+for i in range(10):
+    aa = np.mean(np.random.choice(all_people, size=1000))
+    print(aa)
 
-con_mat_norm = con_mat.astype('float') / con_mat.sum(axis=1)[:, np.newaxis]     # 归一化
-con_mat_norm = np.around(con_mat_norm, decimals=2)
+'''
+3、扩大抽样次数，看看得到的百分比是多少
+应该是更接近65%了
+'''
+print("\n 进行10000次，随机抽取1000个样本，计算所有数据的平均值：")
+values = []
+for i in range(10000):
+    sample = np.random.choice(all_people, size=1000)
+    mean = np.mean(sample)
+    values.append(mean)
 
-# === plot ===
-figure = plt.figure(figsize=(8, 8))
-sns.heatmap(con_mat_norm, annot=True, cmap='Blues')
+print(np.mean(values))
 
-plt.ylim(0, 10)
-plt.xlabel('Predicted labels')
-plt.ylabel('True labels')
-plt.show()
+'''
+4、抽样100次，分别计算置信区间
+这100个区间中，至少有95个区间包含上面计算出总体平均值
+'''
+print("\n 进行100次，随机抽取1000个样本，置信度95%，计算置信区间：")
+
+for i in range(100):
+    sample = np.random.choice(all_people, size=1000)
+    zms = sm.stats.DescrStatsW(sample).zconfint_mean(alpha=0.05)
+    print(zms)
+
+#    mean=np.mean(sample)
+#    values.append(mean)
+
+# print(np.mean(values))

@@ -1,8 +1,6 @@
-import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn import linear_model
 import numpy.random
 import time
 
@@ -157,36 +155,134 @@ def predict(x,theta):
 # print("theta scale:",theta.shape)
 
 
+#
+# data_x,data_y,data_y_ = load_data("student-por.csv")
+# theta = np.zeros([1,3])
+# xx = data_x[:, [28, 29]]
+# t = np.ones((len(xx),1))
+# xxx = np.hstack((t,xx))
+# xxx = np.array(xxx,dtype=int)
+# res = []
+# for i in range(17):
+#     yyy = data_y_[:,[i]]
+#     data = np.hstack((xxx,yyy))
+#     # print(xxx[:5])
+#     # print(yyy[0,:5])
+#     # print(xxx.shape,yyy.shape,theta.shape)
+#     # print(cost(xxx,yyy,theta))
+#     predictions = predict(xxx,theta)
+#     res.append(predictions)
+#     print(len(predictions),predictions)
+#     # print(type(predictions))
+#     print(sum(predictions))
+#     correct = [1 if ((a == 1 and b == 1) or (a == 0 and b == 0)) else 0 for (a,b)in zip(predictions,yyy)]
+#     accuracy = (sum(map(int,correct)) / len(correct))
+#     print("accuracy = {0}%".format(accuracy))
+# print(len(res))
+# correct = 0
+# for i in range(len(res[0])):
+#     for j in range(len(res)):
+#         if res[j][i] == 1 and data_y_[i,j] == 1:
+#             correct += 1
+#             break
+#
+# print("correct=%d, total=%d, accuract=%.4f"%(correct,i+1,correct/(i+1)))
 
-data_x,data_y,data_y_ = load_data("student-por.csv")
-theta = np.zeros([1,3])
-xx = data_x[:, [28, 29]]
-t = np.ones((len(xx),1))
-xxx = np.hstack((t,xx))
-xxx = np.array(xxx,dtype=int)
-res = []
-for i in range(17):
-    yyy = data_y_[:,[i]]
-    data = np.hstack((xxx,yyy))
-    # print(xxx[:5])
-    # print(yyy[0,:5])
-    # print(xxx.shape,yyy.shape,theta.shape)
-    # print(cost(xxx,yyy,theta))
-    predictions = predict(xxx,theta)
-    res.append(predictions)
-    print(len(predictions),predictions)
-    # print(type(predictions))
-    print(sum(predictions))
-    correct = [1 if ((a == 1 and b == 1) or (a == 0 and b == 0)) else 0 for (a,b)in zip(predictions,yyy)]
-    accuracy = (sum(map(int,correct)) / len(correct))
-    print("accuracy = {0}%".format(accuracy))
-print(len(res))
-correct = 0
-for i in range(len(res[0])):
-    for j in range(len(res)):
-        if res[j][i] == 1 and data_y_[i,j] == 1:
-            correct += 1
-            break
 
-print("correct=%d, total=%d, accuract=%.4f"%(correct,i+1,correct/(i+1)))
+
+def loadcsv():
+    tmp = np.loadtxt("student-por.csv", dtype=np.str, delimiter=';')
+    data = tmp[1:]
+    # 分类标准
+    for i in range(len(data)):
+        for j in range(len(data[i])):
+            if data[i][j][0] == '"':
+                data[i][j] = data[i][j][1:-1]
+    id0 = ['no']
+    id1 = ['GP', 'yes', 'F', 'U', 'LE3', 'T', 'teacher', 'home', 'mother']
+    id2 = ['MS', 'M', 'R', 'GT3', 'A', 'health', 'reputation', 'father']
+    id3 = ['services', 'course']
+    id4 = ['at_home']
+    id5 = ['other']
+    for each in id0:
+        index = np.where(data == each)
+        data[index] = 0
+    for each in id1:
+        index = np.where(data == each)
+        data[index] = 1
+    for each in id2:
+        index = np.where(data == each)
+        data[index] = 2
+    for each in id3:
+        index = np.where(data == each)
+        data[index] = 3
+    for each in id4:
+        index = np.where(data == each)
+        data[index] = 4
+    for each in id5:
+        index = np.where(data == each)
+        data[index] = 5
+    data = data.astype(np.int)
+    return data
+
+    # The column you could choose
+
+def get_fea_lab(data):
+    # X = data[:, 30: 32]
+    X = data[:, :30]
+    # X = data[:, [12,13,24]]
+    y = data[:, -1]
+    X = np.mat(X)
+    y = np.mat(y)
+    return X, y
+
+
+# # Define the cost function:
+# def computeCost(data, theta, i):
+#     X, y = get_fea_lab(data)
+#     inner = np.dot(X, theta.T) - y.T
+#     inner = np.power(inner, 2)
+#     return (float(inner[i] / 2))
+
+
+# Define the stochastic gradient descent function:
+def stochastic_gradient_descent(data, theta, alpha, epoch):
+    X0, y0 = get_fea_lab(data)
+    temp = np.mat(np.zeros(theta.shape))
+    parameters = int(theta.shape[1])
+    cost = np.zeros(len(X0))
+    avg_cost = np.zeros(epoch)
+
+    for k in range(epoch):
+        np.random.shuffle(data)
+        X, y = get_fea_lab(data)
+
+        for i in range(len(X)):
+            error = X[i] * theta.T - y[0, i]
+            cost[i] = float(error) ** 2 / 2
+            for j in range(parameters):
+                temp[0, j] = theta[0, j] - alpha * error * X[i, j]
+            theta = temp
+        avg_cost[k] = np.average(cost)
+
+    return theta, avg_cost
+
+# ['0:school', '1:sex', '2:age', '3:address', '4:famsize', '5:Pstatus', '6:Medu', '7:Fedu', '8:Mjob', '9:Fjob', '10:reason',
+    # '11:guardian', '12:traveltime', '13:studytime', '14:failures', '15:schoolsup', '16:famsup', '17:paid', '18:activities',
+    # '19:nursery', '20:higher', '21:internet', '22:romantic', '23:famrel', '24:freetime', '25:goout', '26:Dalc', '27:Walc',
+    # '28:health', '29:absences', '30:G1', '31:G2', '32:G3']
+data = loadcsv()
+# num = len(data[0])-1
+num = 30
+alpha = 0.0001
+epoch = 100
+theta = np.mat(np.zeros((1, num)))
+g, avg_cost = stochastic_gradient_descent(data, theta, alpha, epoch)
+print(avg_cost[-1])
+plt.plot(avg_cost)
+plt.title('Mean sqrt Error: %.6f for All features except G1,G2'%avg_cost[-1])
+plt.show()
+
+# ['school', 'sex', 'age', 'address', 'famsize', 'Pstatus', 'Medu', 'Fedu', 'Mjob',        'Fjob',     'reason',    'guardian', 'traveltime', 'studytime', 'failures', 'schoolsup', 'famsup', 'paid',  'activities', 'nursery',  'higher',  'internet', 'romantic', 'famrel', 'freetime', 'goout', 'Dalc', 'Walc', 'health', 'absences',  'G1',    'G2',  'G3']
+# ['GP',     '"F"', '18',   '"U"',     '"GT3"',   '"A"',     '4',    '4',    '"at_home"', '"teacher"', '"course"', '"mother"',  '2',           '2',        '0',         '"yes"',     '"no"',   '"no"', '"no"',        '"yes"',    '"yes"',  '"no"',      '"no"',    '4',      '3',         '4',    '1',     '1',    '3',      '4',        '"0"',  '"11"', '11']
 

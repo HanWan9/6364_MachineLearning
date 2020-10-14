@@ -81,10 +81,10 @@ def mnist_specific(d,k_scale):
     temp_y = [_ for _ in range(k_scale)]
     for i in range(k_scale):
         res[i] /= total
-    plt.plot(temp_y[1:],res[1:],marker='o') #“ro-”
-    plt.title('digit = %d'%d)
+    plt.plot(temp_y[1:],res[1:], color='coral' )
+    plt.title('I choose the single digit as %d'%d)
     plt.xlabel('k')
-    plt.ylabel('accuracy')
+    plt.ylabel('Accuracy')
     plt.show()
 
 
@@ -218,27 +218,27 @@ def pima():
 
 def confusion_matrix_pima(matrix):
     figure = plt.figure(figsize=(2, 2))
-    sns.heatmap(matrix, annot=True, cmap='Blues')
+    sns.heatmap(matrix, annot=True, cmap='Oranges')
 
     plt.ylim(2)
     # plt.title("Euclidean Distance")
     # plt.title("Manhattan Distance")
-    plt.title("Chebyshev Distance")
-    plt.xlabel('Predicted labels')
-    plt.ylabel('True labels')
+    # plt.title("Chebyshev Distance")
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
     plt.show()
 
 
 # mnist
-mnist_tests_number,mnist_success_number,mnist_failed_number,confusion = mnist(5)
-confusion_matrix(confusion)
-print("%d mnist test cases: %d success, %d failed. Accurancy:=%.4f" % (mnist_tests_number,mnist_success_number,mnist_failed_number, mnist_success_number / mnist_tests_number))
-mnist_specific(7,100)
+# mnist_tests_number,mnist_success_number,mnist_failed_number,confusion = mnist(5)
+# confusion_matrix(confusion)
+# print("%d mnist test cases: %d success, %d failed. Accurancy:=%.4f" % (mnist_tests_number,mnist_success_number,mnist_failed_number, mnist_success_number / mnist_tests_number))
+# mnist_specific(3,50)
 
 
 
 # pima
-pima_tests_number, pima_success_number, pima_failed_number,confusion = pima()
+# pima_tests_number, pima_success_number, pima_failed_number,confusion = pima()
 confusion_matrix_pima(confusion)
 print("%d pima test cases: %d success, %d failed. Accurancy:=%.4f" % (pima_tests_number, pima_success_number, pima_failed_number, pima_success_number / pima_tests_number))
 
